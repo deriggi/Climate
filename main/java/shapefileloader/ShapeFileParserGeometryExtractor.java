@@ -40,7 +40,7 @@ public class ShapeFileParserGeometryExtractor {
             int count = 0;
             while (fi.hasNext()) {
                 SimpleFeature f = fi.next();
-                GeomShapeWrapper wrapper = shapeUtil.extractFeatureProperties(f);
+                GeomShapeWrapper wrapper = shapeUtil.extractFeatureProperties(f, true);
                 
                 shapeWrappers.add(wrapper);
                 count++;

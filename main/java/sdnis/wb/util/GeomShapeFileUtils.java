@@ -34,7 +34,17 @@ public class GeomShapeFileUtils {
         this.propNames = propertyNames;
     }
 
-    public GeomShapeWrapper extractFeatureProperties(Feature f) {
+    private static String replaceBadChars(String target){
+        if(target == null){
+            return target;
+        }
+        target = target.replaceAll("[()]", " ");
+        target = target.replaceAll("[^a-zA-Z0-9]", "_");
+        return target;
+    }
+    
+    
+    public GeomShapeWrapper extractFeatureProperties(Feature f, boolean doTheClean) {
         HashMap<String, String> propMap = new HashMap<String, String>();
         Geometry geom = (Geometry)f.getDefaultGeometryProperty().getValue();
 
@@ -44,6 +54,9 @@ public class GeomShapeFileUtils {
         while (pi.hasNext()) {
             Property p = pi.next();
             String name = p.getName().toString();
+            if(doTheClean){
+                name = replaceBadChars(name);
+            }
             //System.out.println(name);
             if (pattern != null) {
                 if (propNames.contains(name) || pattern.matcher(name).find()) {
@@ -61,6 +74,7 @@ public class GeomShapeFileUtils {
         }
         return new GeomShapeWrapper(geom, propMap);
     }
+    
 
     //
 //    public List<ShapeWrappers> extractProperties() {

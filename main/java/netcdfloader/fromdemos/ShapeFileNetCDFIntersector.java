@@ -47,6 +47,9 @@ public class ShapeFileNetCDFIntersector {
         return wrappers;
     }
 
+    
+    
+    
     private static List<List<GeomShapeWrapper>> getSeveralWrappers(int amount, String shapefileAttributeName) {
         List<List<GeomShapeWrapper>> allWrappers = new ArrayList<List<GeomShapeWrapper>>();
         int i = 0;
@@ -71,10 +74,11 @@ public class ShapeFileNetCDFIntersector {
         //r02
         //r90p
         //r90ptot
+        //SDII
 
         // =====================================================================
-        String varId = "R90PTOT_BCSD_0";
-        DerivativeStats.climatestat stat = DerivativeStats.getInstance().getClimateStat("r90ptot");
+        String varId = "SDII_BCSD_0";
+        DerivativeStats.climatestat stat = DerivativeStats.getInstance().getClimateStat("sdii");
         // =====================================================================
         HashSet<String> strings = new HashSet<String>();
         strings.add("1961-1999");
@@ -361,7 +365,7 @@ public class ShapeFileNetCDFIntersector {
         try {
 
             dataFile = NetcdfFile.open(fname, null);
-            log.info("detailed info when " + dataFile.getDetailInfo());
+//            log.info("detailed info when " + dataFile.getDetailInfo());
             // Get the latitude and longitude Variables.
             Variable latVar = dataFile.findVariable("lat");
             if (latVar == null) {
