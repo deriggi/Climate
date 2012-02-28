@@ -75,7 +75,7 @@ public class GeneratePNG {
 
         } catch (Exception e) {
             // failed to access map layers
-            throw new RuntimeException(e);
+            e.printStackTrace();
         }
 
         BufferedImage image = new BufferedImage(imageBounds.width, imageBounds.height, BufferedImage.TYPE_INT_RGB);

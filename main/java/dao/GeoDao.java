@@ -33,6 +33,55 @@ public class GeoDao<E> {
         GeoDao.storeJoinTableRecord(c, "basin", 1, "drainage", 2);
     }
 
+    
+     public static String getSimplifiedGeometryAsKML(Connection c, String entity, String geomProperty, String whereProp, Object whereValue, double threshold) {
+        ResultSet rs = null;
+        PreparedStatement ps = null;
+        String kml = null;
+        try {
+            StringBuilder sb = new StringBuilder();
+
+            sb.append("select st_asKML(");
+            sb.append("ST_Simplify(");
+            sb.append(entity);
+            sb.append("_");
+            sb.append(geomProperty);
+            sb.append(",");
+            sb.append(threshold);
+            sb.append(")");
+            sb.append(")");
+
+            sb.append(" from ");
+
+            sb.append(entity);
+            sb.append(" where ");
+            sb.append(entity);
+            sb.append("_");
+            sb.append(whereProp);
+
+            sb.append(" = ? ");
+
+            log.info(sb.toString());
+            ps = c.prepareStatement(sb.toString());
+            ps.setObject(1, whereValue);
+
+            rs = ps.executeQuery();
+
+            if (rs.next()) {
+
+                kml = rs.getString(1);
+            }
+
+        } catch (SQLException ex) {
+            log.severe(ex.getMessage());
+        } finally {
+            DBUtils.close(ps, rs);
+        }
+
+        return kml;
+    }
+
+     
     public static void storeJoinTableWithData(Connection c, String parent, int parentId, String child, int childId, String dataField, Object data) {
         PreparedStatement ps = null;
         StringBuilder sb = new StringBuilder();

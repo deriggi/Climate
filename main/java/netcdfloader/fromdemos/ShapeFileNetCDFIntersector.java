@@ -37,8 +37,8 @@ public class ShapeFileNetCDFIntersector {
 
     private static final Logger log = Logger.getLogger(ShapeFileNetCDFIntersector.class.getName());
 
-    private static List<GeomShapeWrapper> getWrappers(String shapefileAttributeName) {
-        String pathToShapeFile = "C:\\Users\\Johnny\\boundary data\\columbia\\Municipios_SIGOT2009_region.shp";
+    private static List<GeomShapeWrapper> getWrappers(String pathToShapeFile, String shapefileAttributeName) {
+//        String pathToShapeFile = "C:\\Users\\Johnny\\boundary data\\columbia\\Municipios_SIGOT2009_region.shp";
 
         ShapeFileParserGeometryExtractor geomExtractor = new ShapeFileParserGeometryExtractor();
         List<String> props = new ArrayList<String>();
@@ -47,53 +47,48 @@ public class ShapeFileNetCDFIntersector {
         return wrappers;
     }
 
-    
-    
-    
-    private static List<List<GeomShapeWrapper>> getSeveralWrappers(int amount, String shapefileAttributeName) {
-        List<List<GeomShapeWrapper>> allWrappers = new ArrayList<List<GeomShapeWrapper>>();
-        int i = 0;
-        while (i++ < amount) {
-            allWrappers.add(getWrappers(shapefileAttributeName));
-
-        }
-        return allWrappers;
-    }
-
+//    private static List<List<GeomShapeWrapper>> getSeveralWrappers(int amount, String shapefileAttributeName) {
+//        List<List<GeomShapeWrapper>> allWrappers = new ArrayList<List<GeomShapeWrapper>>();
+//        int i = 0;
+//        while (i++ < amount) {
+//            allWrappers.add(getWrappers(shapefileAttributeName));
+//
+//        }
+//        return allWrappers;
+//    }
 //    private static String getFileNameIdentifier(DerivativeStats.climatestat variable){
 //        variable.toString();
 //        
 //    }
     public static void main(String[] args) {
-        String shapeFileAttributeName = "NOM_MUNICI";
-        List<List<GeomShapeWrapper>> allWrappers = getSeveralWrappers(1, shapeFileAttributeName);
-        String precipFilesBase = "E:\\updated precip deriv stats - precip is good\\";
-        int i = 0;
+        String shapeFileAttributeName = "ISO_CODES";
+        String pathToShapeFile = "C:\\Users\\Johnny\\BoundaryData\\wbshapes2010\\World_Polys_High.shp";
+        List<GeomShapeWrapper> wrappers = getWrappers(pathToShapeFile, shapeFileAttributeName);
+        String precipFilesBase = "F:\\TEMP Derivative stats- precip is bad\\";
         Collection<DerivativeStats.gcm> gcms = DerivativeStats.getInstance().gcmMap.values();
-        
+
         //r02
         //r90p
         //r90ptot
         //SDII
 
         // =====================================================================
-        String varId = "SDII_BCSD_0";
-        DerivativeStats.climatestat stat = DerivativeStats.getInstance().getClimateStat("sdii");
+        String varId = "FD_BCSD_0";
+        DerivativeStats.climatestat stat = DerivativeStats.getInstance().getClimateStat("fd");
         // =====================================================================
-        HashSet<String> strings = new HashSet<String>();
-        strings.add("1961-1999");
-        strings.add(varId);
-        strings.add("run1");
-        strings.add(".monthly.");
+        HashSet<String> mustHaves = new HashSet<String>();
+        mustHaves.add("2046-2065");
+        mustHaves.add(varId);
+        mustHaves.add("run1");
+        mustHaves.add(".monthly.");
 
         for (DerivativeStats.gcm g : gcms) {
 
 
-            String netcdfPrimer = precipFilesBase + g.toString() + "\\out_stats\\" + g.toString() + ".20c3m.run1." + varId + ".5_2deg_1961-1999.monthly.nc";
-            log.log(Level.INFO, "trying {0} ", netcdfPrimer);
+            String netcdfPrimer = precipFilesBase + g.toString() + "\\out_stats\\" + g.toString() + ".sresa2.run1." + varId + ".5_2deg_2046-2065.monthly.nc";
             log.log(Level.INFO, "trying {0} ", netcdfPrimer);
             String rootNetCDF = precipFilesBase + g.toString() + "\\out_stats\\";
-            new ShapeFileNetCDFIntersector().getShapeWrappers(allWrappers.get(i), shapeFileAttributeName, netcdfPrimer, rootNetCDF, strings, stat);
+            new ShapeFileNetCDFIntersector().getShapeWrappers(wrappers, shapeFileAttributeName, netcdfPrimer, rootNetCDF, mustHaves, stat);
 
 
         }
@@ -108,7 +103,7 @@ public class ShapeFileNetCDFIntersector {
 
 //        netcdfPrimer = "E:\\updated precip deriv stats - precip is good\\gfdl_cm2_0\\out_stats\\gfdl_cm2_0.20c3m.run1.SDII_BCSD_0.5_2deg_1961-1999.monthly.nc";
 //        rootNetCDF = "E:\\updated precip deriv stats - precip is good\\gfdl_cm2_0\\out_stats\\";
-//        new ShapeFileNetCDFIntersector().getShapeWrappers(allWrappers.get(i), shapeFileAttributeName, netcdfPrimer, rootNetCDF);
+//        new ShapeFileNetCDFIntersector().getShapeWrappers(allWrappers.get(i), shapeFileAtStributeName, netcdfPrimer, rootNetCDF);
 
 
 //        netcdfPrimer = "E:\\updated precip deriv stats - precip is good\\gfdl_cm2_1\\out_stats\\gfdl_cm2_1.20c3m.run1.SDII_BCSD_0.5_2deg_1961-1999.monthly.nc";
@@ -126,8 +121,8 @@ public class ShapeFileNetCDFIntersector {
 //         new ShapeFileNetCDFIntersector().getShapeWrappers(allWrappers.get(i), shapeFileAttributeName, netcdfPrimer, rootNetCDF);
 //
 //        
-        String netcdfPrimer = "E:\\updated precip deriv stats - precip is good\\miub_echo_g\\out_stats\\miub_echo_g.20c3m.run1.SDII_BCSD_0.5_2deg_1961-1999.monthly.nc";
-        String rootNetCDF = "E:\\updated precip deriv stats - precip is good\\miub_echo_g\\out_stats\\";
+//        String netcdfPrimer = "E:\\updated precip deriv stats - precip is good\\miub_echo_g\\out_stats\\miub_echo_g.20c3m.run1.SDII_BCSD_0.5_2deg_1961-1999.monthly.nc";
+//        String rootNetCDF = "E:\\updated precip deriv stats - precip is good\\miub_echo_g\\out_stats\\";
 //        new ShapeFileNetCDFIntersector().getShapeWrappers(allWrappers.get(i), shapeFileAttributeName, netcdfPrimer, rootNetCDF);
 //
 //      
@@ -223,6 +218,7 @@ public class ShapeFileNetCDFIntersector {
 
                 // build the cache
                 String regionAttrValue = shapeWrapper.getPropertyMap().get(shapeFileAttributeName);
+
                 log.log(Level.INFO, " building cache for {0} ", regionAttrValue);
 
                 Geometry regionGeom = shapeWrapper.getGeom();
@@ -249,10 +245,11 @@ public class ShapeFileNetCDFIntersector {
                     Set<String> municipioNames = shapeCache.keySet();
 
                     for (String municipioName : municipioNames) {
+
                         HashMap<Integer, BasicAverager> averagers = getDataFromCachedIndexes(rootFile.getAbsolutePath() + "/" + subFile, shapeCache.get(municipioName), new MonthlyTemporalAggregationStrategy(), stat);
                         Set<Integer> timekeys = averagers.keySet();
                         try {
-                            String folderPath = "C:\\Users\\Johnny\\output_columbia\\monthly\\" + stat.toString() + "\\";
+                            String folderPath = "C:\\Users\\Johnny\\output_countries\\monthly\\" + stat.toString() + "\\";
                             String outFile = folderPath + municipioName + "_" + subFile + ".csv";
                             new File(folderPath).mkdirs();
                             FileExportHelper.appendToFile(outFile, "time index, average, frequency");
@@ -322,16 +319,19 @@ public class ShapeFileNetCDFIntersector {
                 for (int j = 0; j < howMuchToRead[1]; j++) {
                     for (int k = 0; k < howMuchToRead[2]; k++) {
 
-                        double latitude = latArray.get(j);
-                        double longitude = flipPostiveLongitude(lonArray.get(k));
+                        double latitude = latArray.get(j) - .25;
+                        double longitude = flipPostiveLongitude(lonArray.get(k)) - .25;
 
                         Polygon theGon = GeometryBuilder.createGridCellFromLowerLeftPoint(longitude, latitude, 0.5);
+
 
                         if (theGon.intersects(region)) {
                             ArrayList<Integer> latLonIndex = new ArrayList<Integer>();
                             latLonIndex.add(j);
                             latLonIndex.add(k);
                             latLonIndexes.add(latLonIndex);
+//                            log.info("lat " + latitude);
+//                            log.info("lon " + longitude);
 
                         }
                     }

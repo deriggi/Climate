@@ -6,7 +6,6 @@ package ascii.tnc;
 
 import ascii.AsciiDataLoader;
 import ascii.NetAsciiLoader;
-import asciipng.CellMapMaker;
 import asciipng.CollectGeometryAsciiAction;
 import asciipng.GridCell;
 import com.vividsolutions.jts.geom.Geometry;

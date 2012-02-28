@@ -118,7 +118,7 @@ public class ShapeFeaturesToPNGParser {
                 Set<Integer> keys = classes.keySet();
                 System.out.println("number of cells layers " + keys.size());
                 for (Integer i : keys) {
-                    map.addLayer(classes.get(i), createGridCellStyle(var.precip, i));
+                    map.addLayer(classes.get(i), createGridCellStyle(ColoredVariable.precip, i));
                     System.out.println("adding cell layer");
                 }
 
@@ -190,7 +190,7 @@ public class ShapeFeaturesToPNGParser {
     private StyleFactory styleFactory = CommonFactoryFinder.getStyleFactory(null);
     private FilterFactory2 filterFactory = CommonFactoryFinder.getFilterFactory2(null);
 
-    private Style createGridCellStyle(var var, int classs) {
+    private Style createGridCellStyle(ColoredVariable var, int classs) {
 
         // create a partially opaque outline stroke
         Stroke stroke = styleFactory.createStroke(
@@ -250,7 +250,7 @@ public class ShapeFeaturesToPNGParser {
     private ArrayList<Color> greenSequence = new ArrayList<Color>();
     private ArrayList<Color> blueToRed = new ArrayList<Color>();
 
-    private enum var {
+    private enum ColoredVariable {
 
         precip, temp;
         private ArrayList<Color> colorRamp = null;
@@ -275,7 +275,7 @@ public class ShapeFeaturesToPNGParser {
         greenSequence.add(new Color(0x55E620));
         greenSequence.add(new Color(0x38E009));
         greenSequence.add(new Color(0x3BD62D));
-        var.precip.setRamp(greenSequence);
+        ColoredVariable.precip.setRamp(greenSequence);
 
         blueToRed.add(new Color(33, 102, 172));
         blueToRed.add(new Color(67, 147, 195));
@@ -286,7 +286,7 @@ public class ShapeFeaturesToPNGParser {
         blueToRed.add(new Color(244, 165, 130));
         blueToRed.add(new Color(214, 96, 77));
         blueToRed.add(new Color(178, 24, 43));
-        var.temp.setRamp(blueToRed);
+        ColoredVariable.temp.setRamp(blueToRed);
     }
 
     private String listToCSVLine(List<Double> vals) {

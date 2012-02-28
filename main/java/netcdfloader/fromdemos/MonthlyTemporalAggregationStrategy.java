@@ -8,10 +8,12 @@ package netcdfloader.fromdemos;
  *
  * @author Johnny
  * 
+ * assumes i is a month index among a set of who-cares how many months.  should always return the month index regardless of year
  * helps produce averages for each month
  */
 public class MonthlyTemporalAggregationStrategy implements TemporalAggregationStrategy {
 
+    
     public int generateKey(int i) {
         return i % 12;
     }

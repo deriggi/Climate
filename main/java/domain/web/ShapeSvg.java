@@ -11,7 +11,7 @@ package domain.web;
  * @author wb385924
  */
 
-public class ShapeSvg {
+public class ShapeSvg implements Comparable<ShapeSvg>{
 
     public ShapeSvg(String shape) {
         this.svg = shape;
@@ -21,6 +21,19 @@ public class ShapeSvg {
         this.svg = shape;
         this.name = name;
     }
+      public int compareTo(ShapeSvg o) {
+        if (o == null){
+            return 1;
+        }
+
+        if(this.min != o.min){
+            return new Float(this.min - o.min).intValue();
+        }
+        
+        return new Float(o.max - this.max).intValue();
+
+    }
+
 
     public ShapeSvg(String shape, String name, float min, float max) {
         this.svg = shape;

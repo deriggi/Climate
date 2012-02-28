@@ -5,6 +5,7 @@
 package sdnis.wb.util;
 
 import com.vividsolutions.jts.geom.Geometry;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -20,33 +21,38 @@ import org.opengis.feature.Property;
  * @author wb385924
  */
 public class GeomShapeFileUtils {
+
     private static final Logger log = Logger.getLogger(GeomShapeFileUtils.class.getName());
-    
     Pattern pattern = null;
 //    FeatureCollection fc = null;
     List<String> propNames = null;
 
-    public GeomShapeFileUtils( String propertyPattern, List<String> propertyNames) {
-        if(propertyPattern != null){
+    public GeomShapeFileUtils(String propertyPattern, List<String> propertyNames) {
+        if (propertyPattern != null) {
             this.pattern = Pattern.compile(propertyPattern);
         }
 //        this.fc = featureCollection;
         this.propNames = propertyNames;
     }
 
-    private static String replaceBadChars(String target){
-        if(target == null){
-            return target;
-        }
-        target = target.replaceAll("[()]", " ");
-        target = target.replaceAll("[^a-zA-Z0-9]", "_");
-        return target;
+    public GeomShapeFileUtils(String singlePropertyName) {
+
+//        this.fc = featureCollection;
+        this.propNames = new ArrayList<String>();
+        this.propNames.add(singlePropertyName);
     }
-    
-    
-    public GeomShapeWrapper extractFeatureProperties(Feature f, boolean doTheClean) {
+
+//    private static String replaceBadChars(String target) {
+//        if (target == null) {
+//            return target;
+//        }
+//        target = target.replaceAll("[()]", " ");
+//        target = target.replaceAll("[^a-zA-Z0-9\\s]", "_");
+//        return target;
+//    }
+    public GeomShapeWrapper extractFeatureProperties(Feature f) {
         HashMap<String, String> propMap = new HashMap<String, String>();
-        Geometry geom = (Geometry)f.getDefaultGeometryProperty().getValue();
+        Geometry geom = (Geometry) f.getDefaultGeometryProperty().getValue();
 
         Collection<Property> props = f.getProperties();
         Iterator<Property> pi = props.iterator();
@@ -54,28 +60,28 @@ public class GeomShapeFileUtils {
         while (pi.hasNext()) {
             Property p = pi.next();
             String name = p.getName().toString();
-            if(doTheClean){
-                name = replaceBadChars(name);
-            }
+
+            
             //System.out.println(name);
             if (pattern != null) {
                 if (propNames.contains(name) || pattern.matcher(name).find()) {
                     propMap.put(p.getName().toString(), p.getValue().toString());
                 }
-            }else{
-                if (propNames.contains(name) ) {
-                    try{
-                        propMap.put(p.getName().toString(), p.getValue().toString());
-                    } catch (Exception e){
-                        log.log(Level.WARNING, "{0} prop name  {1}", new Object[]{e.getMessage(), name});
-                    }
+            }
+
+            if (propNames.contains(name)) {
+                try {
+                    propMap.put(p.getName().toString(), p.getValue().toString());
+                } catch (Exception e) {
+                    log.log(Level.WARNING, "{0} prop name  {1}", new Object[]{e.getMessage(), name});
                 }
             }
+            
+
         }
+        
         return new GeomShapeWrapper(geom, propMap);
     }
-    
-
     //
 //    public List<ShapeWrappers> extractProperties() {
 //        FeatureIterator fi = fc.features();
