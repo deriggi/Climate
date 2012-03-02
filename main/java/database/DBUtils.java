@@ -22,8 +22,8 @@ import org.apache.commons.dbcp.BasicDataSource;
 public class DBUtils {
 
     private static final Logger log = Logger.getLogger(DBUtils.class.getName());
-//    public static final String propfile = "C:\\Users\\Johnny\\db.properties";
-    public static final String propfile = "C:\\db.properties";
+    public static final String propfile = "C:\\Users\\Johnny\\db.properties";
+//    public static final String propfile = "C:\\db.properties";
     private static BasicDataSource cpds = null;
     private static String url;
     private static String username;

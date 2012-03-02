@@ -77,7 +77,7 @@ public class ShapeFileNetCDFIntersector {
         DerivativeStats.climatestat stat = DerivativeStats.getInstance().getClimateStat("fd");
         // =====================================================================
         HashSet<String> mustHaves = new HashSet<String>();
-        mustHaves.add("2046-2065");
+        mustHaves.add("2081-2100");
         mustHaves.add(varId);
         mustHaves.add("run1");
         mustHaves.add(".monthly.");
