@@ -5,6 +5,7 @@
 package asciipng;
 
 import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.MultiPolygon;
 import export.util.FileExportHelper;
 import java.awt.Color;
@@ -13,14 +14,17 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.factory.CommonFactoryFinder;
+import org.geotools.factory.FactoryFinder;
 import org.geotools.feature.FeatureCollections;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
+import org.geotools.geometry.jts.JTSFactoryFinder;
 import org.geotools.map.DefaultMapContext;
 import org.geotools.map.MapContext;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
@@ -109,7 +113,7 @@ public class CellMapMaker {
         map.dispose();
     }
 
-     private Style createCountryStyle() {
+    private Style createCountryStyle() {
 
         // create a partially opaque outline stroke
         Stroke stroke = styleFactory.createStroke(
@@ -137,7 +141,7 @@ public class CellMapMaker {
 
         return style;
     }
-    
+
     public void drawToStream(Collection<GridCell> gridCells, OutputStream os, Geometry regionGeometry) {
         try {
             //        SimpleFeatureCollection cellCollection = FeatureCollections.newCollection();
@@ -164,12 +168,12 @@ public class CellMapMaker {
 
             SimpleFeatureCollection countryCollection = FeatureCollections.newCollection();
             countryCollection.add(featureBuilder.buildFeature(null));
-            
+
             for (Integer i : classKeys) {
 //                map.addLayer(classesOfGridCells.get(i), getGridCellStyle(i));
                 map.addLayer(classesOfGridCells.get(i), getGridCellStyle(i));
             }
-            map.addLayer(countryCollection,createCountryStyle());
+            map.addLayer(countryCollection, createCountryStyle());
 
             double mapArea = map.getLayerBounds().getArea();
             System.out.println("map area is " + mapArea);
@@ -185,7 +189,7 @@ public class CellMapMaker {
             Logger.getLogger(CellMapMaker.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
     /**
      * @TODO maybe make another one that gets a max min
      * @param gridCells
@@ -208,7 +212,7 @@ public class CellMapMaker {
                 features.add(feature);
                 ba.update(cell.getValue());
             }
-            System.out.println(ba.getMax() + " " +ba.getMin());
+            System.out.println(ba.getMax() + " " + ba.getMin());
 
             HashMap<Integer, SimpleFeatureCollection> classesOfGridCells = getClassesOfFeatures(features, max, min);
             Set<Integer> classKeys = classesOfGridCells.keySet();
@@ -220,12 +224,12 @@ public class CellMapMaker {
 
             SimpleFeatureCollection countryCollection = FeatureCollections.newCollection();
             countryCollection.add(featureBuilder.buildFeature(null));
-            
+
             for (Integer i : classKeys) {
 //                map.addLayer(classesOfGridCells.get(i), getGridCellStyle(i));
                 map.addLayer(classesOfGridCells.get(i), getGridCellStyle(i));
             }
-            map.addLayer(countryCollection,createCountryStyle());
+            map.addLayer(countryCollection, createCountryStyle());
 
             double mapArea = map.getLayerBounds().getArea();
             System.out.println("map area is " + mapArea);
@@ -233,7 +237,7 @@ public class CellMapMaker {
             map.setTitle("Quickstart");
 
             GeneratePNG.writeImageToStream(map, os, 400);
-            double[][] bounds = ClassifierHelper.getEqualIntervalBounds(min, max, 10);
+//            double[][] bounds = ClassifierHelper.getEqualIntervalBounds(min, max, 10);
 //            FileExportHelper.appendToFile("C:\\Users\\Johnny\\outputMaps\\Columbia\\legend.html", makeLegend(bounds,ColorRampHelper.getPrecipRamp()));
 
             map.dispose();
@@ -241,21 +245,44 @@ public class CellMapMaker {
             Logger.getLogger(CellMapMaker.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
+
+    public void drawGeoJsonClassesToStream(Collection<GridCell> gridCells, OutputStream os, Geometry regionGeometry, double max, double min) {
+        // get classes of cells
+        HashMap<Integer, HashSet<Geometry>> cells = getClassesOfFeatures(gridCells, max, min);
+
+        // take each class and make it a geojson string
+        unionClassesOfGeometries(cells);
+
+        // javascriptize the strings
+
+        // 
+
+
+    }
     
-    private String makeLegend(double[][] bounds, ArrayList<Color> ramp){
+
+    public static String makeLegend(double[][] bounds, ArrayList<Color> ramp) {
         //iterate through bounds, get color at each index, write to string
         int i = 0;
         StringBuilder sb = new StringBuilder();
-        
-        for(double[] bound : bounds){
-            sb.append("<td style = 'background-color:");
-            sb.append(ramp.get(i));
-            sb.append("'>");
+
+        for (double[] bound : bounds) {
+            sb.append("<td style = 'background-color:rgb(");
+            sb.append(ramp.get(i).getRed());
+            sb.append(",");
+            sb.append(ramp.get(i).getGreen());
+            sb.append(",");
+            sb.append(ramp.get(i).getBlue());
+            sb.append(")'>");
             sb.append(bound[0]);
             sb.append("</td>");
-            sb.append("<td style = 'background-color:");
-            sb.append(ramp.get(i));
-            sb.append("'>");
+            sb.append("<td style = 'background-color:rgb(");
+            sb.append(ramp.get(i).getRed());
+            sb.append(",");
+            sb.append(ramp.get(i).getGreen());
+            sb.append(",");
+            sb.append(ramp.get(i).getBlue());
+            sb.append(")'>");
             sb.append(bound[1]);
             sb.append("</td>");
             i++;
@@ -266,7 +293,7 @@ public class CellMapMaker {
     private HashMap<Integer, SimpleFeatureCollection> getClassesOfFeatures(ArrayList<SimpleFeature> features, BasicAverager ba) {
         return getClassesOfFeatures(features, ba.getMax(), ba.getMin());
     }
-    
+
     private HashMap<Integer, SimpleFeatureCollection> getClassesOfFeatures(ArrayList<SimpleFeature> features, double max, double min) {
         double[][] bounds = ClassifierHelper.getEqualIntervalBounds(min, max, 10);
         HashMap<Integer, SimpleFeatureCollection> classes = new HashMap<Integer, SimpleFeatureCollection>();
@@ -287,6 +314,39 @@ public class CellMapMaker {
 //                        classes.get(classs).add(f);
                     }
                 }
+            }
+        }
+        return classes;
+    }
+
+    private HashMap<Integer, Geometry> unionClassesOfGeometries(HashMap<Integer, HashSet<Geometry>> classes) {
+        Set<Integer> classKeys = classes.keySet();
+        GeometryFactory factory = JTSFactoryFinder.getGeometryFactory(null);
+        HashMap<Integer, Geometry> unionizedCells = new HashMap<Integer, Geometry>();
+
+        for (Integer clazz : classKeys) {
+            Geometry unioned = factory.buildGeometry(classes.get(clazz)).union();
+            unionizedCells.put(clazz, unioned);
+        }
+        return unionizedCells;
+
+
+
+    }
+
+    private HashMap<Integer, HashSet<Geometry>> getClassesOfFeatures(Collection<GridCell> gridCells, double max, double min) {
+        double[][] bounds = ClassifierHelper.getEqualIntervalBounds(min, max, 10);
+        HashMap<Integer, HashSet<Geometry>> classes = new HashMap<Integer, HashSet<Geometry>>();
+        for (GridCell cell : gridCells) {
+            double data = cell.getValue();
+
+            int classs = ClassifierHelper.getClass(data, bounds)[0][0];
+            if (classs != -1) {
+                if (!classes.containsKey(classs)) {
+                    classes.put(classs, new HashSet<Geometry>());
+                }
+                classes.get(classs).add(cell.getPolygon());
+//                        classes.get(classs).add(f);
             }
         }
         return classes;
