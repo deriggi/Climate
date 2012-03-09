@@ -18,6 +18,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.factory.FactoryFinder;
@@ -245,21 +247,126 @@ public class CellMapMaker {
             Logger.getLogger(CellMapMaker.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
+    private static Logger log = Logger.getLogger(CellMapMaker.class.getName());
+//    private static final String pattern = "\\(\\-?\\d+(\\.\\d\\s{1,})+\\s\\-?\\d+(\\.\\d\\s{1,})+ \\,\\-?\\d+(\\.\\d\\s{1,})+\\s\\-?\\d+(\\.\\d\\s{1,})+\\)";
+    private static final String pattern = "\\(((\\s*\\-?\\d+(\\.\\d+)?\\s+\\-?\\d+(\\.\\d+)?)\\s*\\,?\\s*)+\\s*\\)";
 
-    public void drawGeoJsonClassesToStream(Collection<GridCell> gridCells, OutputStream os, Geometry regionGeometry, double max, double min) {
+    /**
+     * Lets just handle polygons or multiploygons here, turn them into geojson strings
+     * @param wkt a multipolygon probably
+     */
+    private String extractGeoJsonFromWkt(String wkt) {
+        //match ( number number,number number...)
+        Pattern p = Pattern.compile(pattern);
+        Matcher matcher = p.matcher(wkt);
+
+        StringBuilder sb = new StringBuilder();
+        String start = " 'geometry': { 'type': 'MultiPolygon',coordinates: [[";
+        sb.append(start);
+
+        while (matcher.find()) {
+
+            // a list of points
+            String whatWasFound = matcher.group().replaceAll("[\\(\\)]", " ").trim();
+
+            // add the polygon
+            sb.append(convertListOfPointsToGeojsonPolygonPart(whatWasFound));
+            sb.append(",");
+        }
+        
+        // lamely delete the last comma
+        sb.delete(sb.length() - 1, sb.length());
+        sb.append("]]}");
+        
+        return sb.toString();
+
+    }
+
+    /**
+     *          input... 
+     * 
+     *          -74 7.0000000000000995, -74 7.5000000000000995, -74 8.0000000000001, -73.5 8.0000000000001,
+     * 
+     * 
+     *          output...
+     * 
+     * 
+    [
+    [-105.00432014465332, 39.74732195489861],
+    [-105.00715255737305, 39.74620006835170],
+    [-105.00921249389647, 39.74468219277038],....
+    ]
+    
+     */
+    private String convertListOfPointsToGeojsonPolygonPart(String inputCoordinates) {
+
+        if (inputCoordinates == null) {
+            return null;
+        }
+
+        StringBuilder sb = new StringBuilder();
+
+        String[] parts = inputCoordinates.split(",");
+
+        int count = 0;
+
+        sb.append("[");
+        for (String part : parts) {
+            part = part.trim();
+
+            String[] coords = part.split("\\s+");
+
+            // we are good let's build this line
+            if (coords.length == 2) {
+                sb.append("[");
+                sb.append(coords[0]);
+                sb.append(",");
+                sb.append(coords[1]);
+                sb.append("]");
+                if (count++ < parts.length - 1) {
+                    sb.append(",");
+                }
+            } else {
+                System.out.println("parts: 1: " + coords[0] + " 2:" + coords[1] + " 3:" + coords[2]);
+            }
+        }
+        sb.append("]");
+        return sb.toString();
+
+    }
+
+    public static void main(String[] args) {
+        String input = "MULTIPOLYGON (((-74 7.0000000000000995, -74 7.5000000000000995, -74 8.0000000000001, -73.5 8.0000000000001, -73.5 7.5000000000000995, -73.5 7.0000000000000995, -74 7.0000000000000995)), ((-73.5 9.0000000000001, -73.5 8.5000000000001, -74 8.5000000000001, -74.5 8.5000000000001, -75 8.5000000000001, -75 9.0000000000001, -75 9.5000000000001, -75 10.0000000000001, -74.5 10.0000000000001, -74 10.0000000000001, -73.5 10.0000000000001, -73.5 9.5000000000001, -73.5 9.0000000000001)), ((-68.5 4.0000000000000995, -68.5 4.5000000000000995, -69 4.5000000000000995, -69 5.0000000000000995, -69.5 5.0000000000000995, -69.5 5.5000000000000995, -69 5.5000000000000995, -69 6.0000000000000995, -69 6.5000000000000995, -68.5 6.5000000000000995, -68 6.5000000000000995, -67.5 6.5000000000000995, -67 6.5000000000000995, -67 6.0000000000000995, -67.5 6.0000000000000995, -67.5 5.5000000000000995, -67.5 5.0000000000000995, -67.5 4.5000000000000995, -67.5 4.0000000000000995, -68 4.0000000000000995, -68.5 4.0000000000000995)))";
+        log.info(new CellMapMaker().extractGeoJsonFromWkt(input));
+    }
+
+    public String drawGeoJsonClassesToStream(Collection<GridCell> gridCells, Geometry regionGeometry, double max, double min) {
         // get classes of cells
         HashMap<Integer, HashSet<Geometry>> cells = getClassesOfFeatures(gridCells, max, min);
 
         // take each class and make it a geojson string
-        unionClassesOfGeometries(cells);
+        HashMap<Integer, Geometry> classesAsSingleGeometries = unionClassesOfGeometries(cells);
 
         // javascriptize the strings
+        // but before we javascriptize them, print them to screen mean
+        Set<Integer> classKeys = classesAsSingleGeometries.keySet();
 
-        // 
+        
+        // iterate through each class
+        StringBuilder sb = new StringBuilder();
+        for (Integer i : classKeys) {
+            String wkt = classesAsSingleGeometries.get(i).toText();
+
+            // get style properties for this class
+            
+            // get a multipolygon geojson object for this class
+            sb.append(extractGeoJsonFromWkt(wkt));
+        }
+        
+        return sb.toString();
 
 
     }
-    
 
     public static String makeLegend(double[][] bounds, ArrayList<Color> ramp) {
         //iterate through bounds, get color at each index, write to string

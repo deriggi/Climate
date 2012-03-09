@@ -73,11 +73,11 @@ public class ShapeFileNetCDFIntersector {
         //SDII
 
         // =====================================================================
-        String varId = "TXX_BCSD_0";
-        DerivativeStats.climatestat stat = DerivativeStats.getInstance().getClimateStat("txx");
+        String varId = "TX10P_BCSD_0";
+        DerivativeStats.climatestat stat = DerivativeStats.getInstance().getClimateStat("TX10P");
         // =====================================================================
         HashSet<String> mustHaves = new HashSet<String>();
-        mustHaves.add("2081-2100");
+        mustHaves.add("1961-1999");
         mustHaves.add(varId);
         mustHaves.add("run1");
         mustHaves.add(".monthly.");

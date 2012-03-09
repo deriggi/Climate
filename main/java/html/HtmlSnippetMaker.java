@@ -4,12 +4,8 @@
  */
 package html;
 
-import asciipng.CellMapMaker;
-import cru.precip.GeometryCruPNGMapMaker;
 import export.util.FileExportHelper;
 import java.util.HashMap;
-import shapefileloader.graphics.ClassifierHelper;
-import shapefileloader.graphics.ColorRampHelper;
 
 /**
  * just a simlpe utility for making some sinppets for the columbia precipitation maps
