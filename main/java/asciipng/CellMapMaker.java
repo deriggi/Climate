@@ -339,6 +339,15 @@ public class CellMapMaker {
         String input = "MULTIPOLYGON (((-74 7.0000000000000995, -74 7.5000000000000995, -74 8.0000000000001, -73.5 8.0000000000001, -73.5 7.5000000000000995, -73.5 7.0000000000000995, -74 7.0000000000000995)), ((-73.5 9.0000000000001, -73.5 8.5000000000001, -74 8.5000000000001, -74.5 8.5000000000001, -75 8.5000000000001, -75 9.0000000000001, -75 9.5000000000001, -75 10.0000000000001, -74.5 10.0000000000001, -74 10.0000000000001, -73.5 10.0000000000001, -73.5 9.5000000000001, -73.5 9.0000000000001)), ((-68.5 4.0000000000000995, -68.5 4.5000000000000995, -69 4.5000000000000995, -69 5.0000000000000995, -69.5 5.0000000000000995, -69.5 5.5000000000000995, -69 5.5000000000000995, -69 6.0000000000000995, -69 6.5000000000000995, -68.5 6.5000000000000995, -68 6.5000000000000995, -67.5 6.5000000000000995, -67 6.5000000000000995, -67 6.0000000000000995, -67.5 6.0000000000000995, -67.5 5.5000000000000995, -67.5 5.0000000000000995, -67.5 4.5000000000000995, -67.5 4.0000000000000995, -68 4.0000000000000995, -68.5 4.0000000000000995)))";
         log.info(new CellMapMaker().extractGeoJsonFromWkt(input));
     }
+    
+    private String getBasicFeatureStart(int clazz){
+        String top = "  allClasses[ " + clazz + " ] = { 'type': 'Feature','properties': { 'popupContent': 'This is the Auraria West Campus', ";
+        return top;
+    }
+    
+    
+    
+    
 
     public String drawGeoJsonClassesToStream(Collection<GridCell> gridCells, Geometry regionGeometry, double max, double min) {
         // get classes of cells
@@ -353,14 +362,20 @@ public class CellMapMaker {
 
         
         // iterate through each class
+        int indexOfClass = 0;
         StringBuilder sb = new StringBuilder();
         for (Integer i : classKeys) {
             String wkt = classesAsSingleGeometries.get(i).toText();
 
             // get style properties for this class
+            sb.append(getBasicFeatureStart(indexOfClass++));
+            sb.append(getCSSGridCellStyle(i));
+            sb.append(",");
+            
             
             // get a multipolygon geojson object for this class
             sb.append(extractGeoJsonFromWkt(wkt));
+            sb.append("};");
         }
         
         return sb.toString();
@@ -457,6 +472,27 @@ public class CellMapMaker {
             }
         }
         return classes;
+    }
+    
+    private String getCSSGridCellStyle(int classIndex){
+        String firstPartStyle = " 'style': { weight: 0, color: '#efefef',opacity: 0.5, fillColor:";
+        String secondPartStyle = " , fillOpacity: 0.5 }}";
+        
+        StringBuilder sb=  new StringBuilder();
+        sb.append(firstPartStyle);
+        
+        Color thecolor = ColorRampHelper.getTemperatureRamp().get(classIndex);
+        sb.append("'rgb(");
+        sb.append(thecolor.getRed());
+        sb.append(",");
+        sb.append(thecolor.getGreen());
+        sb.append(",");
+        sb.append(thecolor.getBlue());
+        sb.append(")'");
+        sb.append(secondPartStyle);
+        
+        return sb.toString();
+        
     }
 
     private Style getGridCellStyle(int classIndex) {

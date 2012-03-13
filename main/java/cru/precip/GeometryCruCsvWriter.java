@@ -12,6 +12,7 @@ import ascii.AsciiDataLoader;
 import asciipng.CollectGeometryAsciiAction;
 import asciipng.GridCell;
 import com.vividsolutions.jts.geom.Geometry;
+import cru.precip.moneymaker.StatusCache;
 import export.util.FileExportHelper;
 
 import java.io.File;
@@ -39,6 +40,7 @@ public class GeometryCruCsvWriter {
 
     private static final Logger log = Logger.getLogger(GeometryCruCsvWriter.class.getName());
     private BasicAverager masterAverager = new BasicAverager();
+
     public static void main(String[] args) {
         GeometryCruCsvWriter cruWriter = new GeometryCruCsvWriter();
 
@@ -47,8 +49,8 @@ public class GeometryCruCsvWriter {
         String cruDirectory = "C:\\Users\\Johnny\\Dropbox\\CRU\\tmp\\tmp\\";
 
         String outputDirectory = "C:\\Users\\Johnny\\monthlyCRUoutput\\";
-        
-        
+
+
         String outputFileName = "TemperatureSDOutputFile.csv";
 
         String shapeFilePath = "C:\\Users\\Johnny\\boundary data\\columbia\\Municipios_SIGOT2009_region.shp";
@@ -62,15 +64,19 @@ public class GeometryCruCsvWriter {
     /**
      * Creates a CSV file for each raster with the BasicAverager data for each geometry
      */
-    public void createRawOutput(HashMap<String, Geometry> geometryMap, HashMap<String, List<GridCell>> cache, String rootDirectory, String outputDirectory) {
-
+    public void createRawOutput(HashMap<String, Geometry> geometryMap, HashMap<String, List<GridCell>> cache,
+            String rootDirectory, String outputDirectory, String statusCacheKey) {
 
         File rootFile = new File(rootDirectory);
         String[] subFiles = rootFile.list();
         // get countries
 
+        
+        StatusCache.setFinalRestingPlace(statusCacheKey, outputDirectory);
+        
         // iterate through countries picking out cells
         Set<String> locationNames = geometryMap.keySet();
+        int subFileCounter = 0;
         for (String s : subFiles) {
 
             // get grid cells
@@ -78,7 +84,7 @@ public class GeometryCruCsvWriter {
             Set<GridCell> cruCells = getGridCells(rootDirectory + s);
             List<GridCell> cellList = new ArrayList<GridCell>(cruCells);
             Collections.sort(cellList);
-
+            new File(outputDirectory).mkdirs();
             FileExportHelper.appendToFile(outputDirectory + s + ".csv", "Municipio" + "," + "Average" + " , " + "Max" + " , " + "Min" + " , " + "Frequency");
 
 
@@ -99,14 +105,20 @@ public class GeometryCruCsvWriter {
                         }
                     }
                 }
-                if (countryCells != null) {
+
+                if (countryCells != null && countryCells.size() > 0) {
                     locationName = locationName.replaceAll("\\,", " ");
                     FileExportHelper.appendToFile(outputDirectory + s + ".csv", locationName + "," + ba.getAvg() + " , " + ba.getMax() + " , " + ba.getMin() + " , " + ba.getCount());
+                    StatusCache.setLastFile(statusCacheKey, s);
+                    StatusCache.setPercentComplete(statusCacheKey, ((float) subFileCounter) /  (subFiles.length-1) );
+
                 }
+
                 long t1 = new Date().getTime();
                 log.log(Level.INFO, "processing  {0} took  ", new Object[]{(t1 - t0) / 1000.0});
             }
 
+            subFileCounter++;
         }
 
     }
@@ -132,7 +144,7 @@ public class GeometryCruCsvWriter {
     /**
      * Creates a monthly output
      */
-    public void createMonthlyOutput(HashMap<String, Geometry> geometryMap, HashMap<String, List<GridCell>> cache, String rootDirectory, String outputDirectory,String outputFileName) {
+    public void createMonthlyOutput(HashMap<String, Geometry> geometryMap, HashMap<String, List<GridCell>> cache, String rootDirectory, String outputDirectory, String outputFileName) {
         File rootFile = new File(rootDirectory);
         String[] subFiles = rootFile.list();
         // get countries
