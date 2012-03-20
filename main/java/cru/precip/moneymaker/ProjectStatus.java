@@ -22,6 +22,15 @@ public class ProjectStatus {
     private PROJECT_STATUS_CODE status;
     private String finalRestingPlace;
     private String lastFileProcessed;
+    private String userEmailAddress;
+
+    public String getUserEmailAddress() {
+        return userEmailAddress;
+    }
+
+    public void setUserEmailAddress(String userEmailAddress) {
+        this.userEmailAddress = userEmailAddress;
+    }
 
     public String getLastFileProcessed() {
         return lastFileProcessed;

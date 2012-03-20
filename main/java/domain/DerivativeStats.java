@@ -71,7 +71,7 @@ public class DerivativeStats {
 
     public enum tempstat implements climatestat {
 
-        tasmin(true), tasmax(true), txx(true), tnn(true), TX10P(true), tx90(false), fd(true), TX90P(true), tn90p(true), TN10P(true), hwdi(false), gd10(true), hd18(true), cd18(true)/*gsl*/;
+        tasmin(true), tasmax(true), txx(true), tnn(true), TX10P(true), tx90(false), fd(true), TX90P(true), TN90P(true), TN10P(true), hwdi(false), gd10(true), hd18(true), cd18(true)/*gsl*/;
         private int id;
         private boolean isMonthly = false;
 

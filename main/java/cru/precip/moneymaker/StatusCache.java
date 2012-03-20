@@ -5,6 +5,7 @@
 package cru.precip.moneymaker;
 
 import java.util.HashMap;
+import java.util.logging.Logger;
 
 /**
  *
@@ -13,11 +14,15 @@ import java.util.HashMap;
 public class StatusCache {
 
     private static HashMap<String, ProjectStatus> statusMap = new HashMap<String, ProjectStatus>();
-
+    private static Logger log = Logger.getLogger(StatusCache.class.getName());
+    
     private StatusCache() {
     }
     
     public static synchronized void setFinalRestingPlace(String projectKey, String restingPlacePath){
+        if(restingPlacePath == null){
+            return;
+        }
         if (!statusMap.containsKey(projectKey)) {
             ProjectStatus ps = new ProjectStatus();
             ps.setTitle(projectKey);
@@ -25,6 +30,7 @@ public class StatusCache {
         }
         
         ProjectStatus ps = statusMap.get(projectKey);
+        restingPlacePath = restingPlacePath.replaceAll("\\\\", "/");
         ps.setFinalRestingPlace(restingPlacePath);
         
     }
@@ -59,6 +65,28 @@ public class StatusCache {
 
         ProjectStatus ps = statusMap.get(projectKey);
         ps.setLastFileProcessed(lastFile);
+
+    }
+    
+    public static synchronized void setUserEmail(String projectKey, String userEmail) {
+        if (!statusMap.containsKey(projectKey)) {
+            ProjectStatus ps = new ProjectStatus();
+            ps.setTitle(projectKey);
+            statusMap.put(projectKey, ps);
+            log.info("when setting the email, there were actually no  other jobs for "  + projectKey);
+        }
+        
+        ProjectStatus ps = statusMap.get(projectKey);
+        ps.setUserEmailAddress(userEmail);
+    }
+    
+    public static synchronized String getUserEmail(String projectKey) {
+        if (!statusMap.containsKey(projectKey)) {
+            return null;
+        }
+
+        ProjectStatus ps = statusMap.get(projectKey);
+        return ps.getUserEmailAddress();
 
     }
 

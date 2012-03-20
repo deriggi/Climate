@@ -8,6 +8,7 @@ package cru.precip;
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
+import amazon.Amazon;
 import ascii.AsciiDataLoader;
 import asciipng.CollectGeometryAsciiAction;
 import asciipng.GridCell;
@@ -28,6 +29,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import sdnis.wb.util.BasicAverager;
 import sdnis.wb.util.StatsAverager;
 import shapefileloader.ShapeFileParserGeometryExtractor;
@@ -69,30 +72,32 @@ public class GeometryCruCsvWriter {
 
         File rootFile = new File(rootDirectory);
         String[] subFiles = rootFile.list();
-        // get countries
-
         
-        StatusCache.setFinalRestingPlace(statusCacheKey, outputDirectory);
+        // TODO let's make this the var name
+        String crazyHashedFinalFileName = Long.toString(new Date().getTime());
+        String finalRestingPlace = outputDirectory + crazyHashedFinalFileName + ".csv";
+        new File(outputDirectory).mkdirs();
+        
+        StatusCache.setFinalRestingPlace(statusCacheKey, finalRestingPlace);
+        
         
         // iterate through countries picking out cells
-        Set<String> locationNames = geometryMap.keySet();
+        Set<String> locationNames = geometryMap.keySet();   
         int subFileCounter = 0;
+        FileExportHelper.appendToFile(finalRestingPlace, "Date" + "," + "Average" + " , " + "Max" + " , " + "Min" + " , " + "Frequency");
         for (String s : subFiles) {
 
             // get grid cells
-            log.log(Level.INFO, "abound to get cru cells for next file {0}", s);
+            log.log(Level.FINE, "reading raster file:  {0}", s);
             Set<GridCell> cruCells = getGridCells(rootDirectory + s);
             List<GridCell> cellList = new ArrayList<GridCell>(cruCells);
             Collections.sort(cellList);
-            new File(outputDirectory).mkdirs();
-            FileExportHelper.appendToFile(outputDirectory + s + ".csv", "Municipio" + "," + "Average" + " , " + "Max" + " , " + "Min" + " , " + "Frequency");
-
-
+            
             for (String locationName : locationNames) {
 
 
                 long t0 = new Date().getTime();
-                log.log(Level.INFO, "intersecting with  {0}", locationName);
+                log.log(Level.FINE, "intersecting with  {0}", locationName);
                 List<GridCell> countryCells = cache.get(locationName);
                 BasicAverager ba = new BasicAverager();
                 if (countryCells != null) {
@@ -108,21 +113,44 @@ public class GeometryCruCsvWriter {
 
                 if (countryCells != null && countryCells.size() > 0) {
                     locationName = locationName.replaceAll("\\,", " ");
-                    FileExportHelper.appendToFile(outputDirectory + s + ".csv", locationName + "," + ba.getAvg() + " , " + ba.getMax() + " , " + ba.getMin() + " , " + ba.getCount());
+                    FileExportHelper.appendToFile(finalRestingPlace, getYearFromCruFileName(s) + " - " + getMonthFromCruFileName(s) + "," + ba.getAvg() + " , " + ba.getMax() + " , " + ba.getMin() + " , " + ba.getCount());
                     StatusCache.setLastFile(statusCacheKey, s);
                     StatusCache.setPercentComplete(statusCacheKey, ((float) subFileCounter) /  (subFiles.length-1) );
-
                 }
 
                 long t1 = new Date().getTime();
-                log.log(Level.INFO, "processing  {0} took  ", new Object[]{(t1 - t0) / 1000.0});
+                log.log(Level.FINE, "processing  took {0} ", new Object[]{(t1 - t0) / 1000.0});
             }
 
             subFileCounter++;
         }
-
+        
+        // done processing so write to the s3 buckent
+        File finalFile = new File(finalRestingPlace);
+        Amazon.putFile(finalFile, "cru", finalFile.getName());
+        String url = Amazon.getUrlForObject("cru", finalFile.getName());
+        StatusCache.setFinalRestingPlace(statusCacheKey, url);
+        
+        // send an email once we are done
+        String email = StatusCache.getUserEmail(statusCacheKey);
+        log.log(Level.INFO, "sending email to {0}", email);
+        if(email != null ){
+            Amazon.sendEmail(email, "Your CRU job is complete", "Your finished job is here: <a href='" + url + "'>region data</a>");
+        }
+        
     }
 
+    private int getYearFromCruFileName(String name){
+        String pattern = "\\w{3}_\\d{4}_\\d{1,2}";
+        Pattern p = Pattern.compile(pattern);
+        Matcher matcher = p.matcher(name);
+        if(matcher.find()){
+            String group = matcher.group();
+            String year = group.split("_")[1];
+            return Integer.parseInt(year);
+        }
+        return -1;
+    }
     private int getMonthFromCruFileName(String name) {
         if (name == null) {
             return -1;
@@ -287,8 +315,8 @@ public class GeometryCruCsvWriter {
             long t0 = Calendar.getInstance().getTimeInMillis();
             new AsciiDataLoader(caa).parseAsciiFile(null, new FileInputStream(new File(cruPath)), null);
             long t1 = Calendar.getInstance().getTimeInMillis();
-            log.log(Level.INFO, "collecting cells took :  {0} seconds", (t1 - t0) / 1000.0);
-            log.log(Level.INFO, "have {0}", caa.getSize());
+            log.log(Level.FINE, "collecting cells took :  {0} seconds", (t1 - t0) / 1000.0);
+            log.log(Level.FINE, "have {0}", caa.getSize());
         } catch (IOException ex) {
             ex.printStackTrace();
         }
