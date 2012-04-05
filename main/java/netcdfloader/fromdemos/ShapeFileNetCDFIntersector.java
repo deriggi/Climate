@@ -64,7 +64,7 @@ public class ShapeFileNetCDFIntersector {
         String shapeFileAttributeName = "ISO_CODES";
         String pathToShapeFile = "C:\\Users\\Johnny\\BoundaryData\\wbshapes2010\\World_Polys_High.shp";
         List<GeomShapeWrapper> wrappers = getWrappers(pathToShapeFile, shapeFileAttributeName);
-        String precipFilesBase = "F:\\TEMP Derivative stats- precip is bad\\";
+        String precipFilesBase = "F:\\updated precip deriv stats - precip is good\\";
         Collection<DerivativeStats.gcm> gcms = DerivativeStats.getInstance().gcmMap.values();
 
         //r02
@@ -73,14 +73,16 @@ public class ShapeFileNetCDFIntersector {
         //SDII
 
         // =====================================================================
-        String varId = "TN90P_BCSD_0";
-        DerivativeStats.climatestat stat = DerivativeStats.getInstance().getClimateStat("TN90P");
+        String varId = "pr_BCSD_0";
+        DerivativeStats.climatestat stat = DerivativeStats.precipstat.pr;
         // =====================================================================
         HashSet<String> mustHaves = new HashSet<String>();
         mustHaves.add("1961-1999");
         mustHaves.add(varId);
         mustHaves.add("run1");
         mustHaves.add(".monthly.");
+        
+        HashSet<String> mustNotHaves = new HashSet<String>();
 
         for (DerivativeStats.gcm g : gcms) {
 
@@ -88,7 +90,8 @@ public class ShapeFileNetCDFIntersector {
             String netcdfPrimer = precipFilesBase + g.toString() + "\\out_stats\\" + g.toString() + ".sresa2.run1." + varId + ".5_2deg_2046-2065.monthly.nc";
             log.log(Level.INFO, "trying {0} ", netcdfPrimer);
             String rootNetCDF = precipFilesBase + g.toString() + "\\out_stats\\";
-            new ShapeFileNetCDFIntersector().getShapeWrappers(wrappers, shapeFileAttributeName, netcdfPrimer, rootNetCDF, mustHaves, stat);
+            
+            new ShapeFileNetCDFIntersector().getShapeWrappers(wrappers, shapeFileAttributeName, netcdfPrimer, rootNetCDF, mustHaves, mustNotHaves, stat);
 
 
         }
@@ -138,136 +141,66 @@ public class ShapeFileNetCDFIntersector {
     }
 
     // driver
-    public void getShapeWrappers(List<GeomShapeWrapper> wrappers, String shapeFileAttributeName, String netcdfPrimer, String rootNetCDF, Set<String> fileNameConstraints, DerivativeStats.climatestat stat) {
-        new Thread(new Intersector(wrappers, shapeFileAttributeName, netcdfPrimer, rootNetCDF, fileNameConstraints, stat)).run();
+    public void getShapeWrappers(List<GeomShapeWrapper> wrappers, String shapeFileAttributeName, String netcdfPrimer, String rootNetCDF, Set<String> fileNameConstraints, Set<String> mustNotHaves, DerivativeStats.climatestat stat) {
+//        new Thread(new Intersector(wrappers, shapeFileAttributeName, netcdfPrimer, rootNetCDF, fileNameConstraints, stat)).run();
 
-//        ShapeFileParserGeometryExtractor geomExtractor = new ShapeFileParserGeometryExtractor();
-//        List<String> props = new ArrayList<String>();
-//        props.add(shapeFileAttributeName);
-//        List<GeomShapeWrapper> wrappers = geomExtractor.readShapeFile(pathShapeFile, props, null);
-//        log.log(Level.INFO, "have a list of {0} region geometries", wrappers.size());
-//        // the cache is a string with a list of indexes
-//        HashMap<String, List<ArrayList<Integer>>> shapeCache = new HashMap<String, List<ArrayList<Integer>>>();
-//
-//        for (GeomShapeWrapper shapeWrapper : wrappers) {
-//
-//            // build the cache
-//            String regionAttrValue = shapeWrapper.getPropertyMap().get(shapeFileAttributeName);
-//            log.log(Level.INFO, " building cache for {0} ", regionAttrValue);
-//
-//            Geometry regionGeom = shapeWrapper.getGeom();
-//            List<ArrayList<Integer>> indexes = buildCache(netcdfPrimer, regionGeom);
-//
-//            log.log(Level.INFO, " cache size is {0} for {1} of geom {2}", new Object[]{indexes.size(), regionAttrValue, regionGeom.toText()});
-//
-//            shapeCache.put(shapeWrapper.getPropertyMap().get(shapeFileAttributeName), indexes);
-//
-//        }
-//
-//        // do the processing
-//        // for each raster, iterate through all shapeCaches
-//        File rootFile = new File(rootNetCDF);
-//        String[] subFiles = rootFile.list();
-//        for (String subFile : subFiles) {
-//            if (subFile.contains("pr_BCSD")) {
-//                Set<String> municipioNames = shapeCache.keySet();
-//
-//                for (String municipioName : municipioNames) {
-//                    HashMap<Integer, BasicAverager> averagers = getDataFromCachedIndexes(rootFile.getAbsolutePath() + "/" + subFile, shapeCache.get(municipioName));
-//                    Set<Integer> timekeys = averagers.keySet();
-//                    FileExportHelper.appendToFile("C:\\Users\\Johnny\\output_columbia\\" + municipioName + "_" + subFile, "time index, average, frequency");
-//                    for (Integer i : timekeys) {
-//                        FileExportHelper.appendToFile("C:\\Users\\Johnny\\output_columbia\\" + municipioName + "_" + subFile, i + "," + averagers.get(i).getAvg() + " , " + averagers.get(i).getCount());
-//
-//                    }
-//                }
-//            }
-//        }
+        log.log(Level.INFO, "have a list of {0} region geometries", wrappers.size());
+        // the cache is a string with a list of indexes
+        HashMap<String, List<ArrayList<Integer>>> shapeCache = new HashMap<String, List<ArrayList<Integer>>>();
+        int count = 0;
+        for (GeomShapeWrapper shapeWrapper : wrappers) {
 
-
-    }
-
-    private class Intersector implements Runnable {
-
-        private String shapeFileAttributeName;
-        private String netcdfPrimer;
-        private String rootNetCDF;
-        private List<GeomShapeWrapper> wrappers;
-        private Set<String> fileNameConstraints;
-        private DerivativeStats.climatestat stat;
-
-        public Intersector(List<GeomShapeWrapper> wrappers, String shapeFileAttributeName, String netcdfPrimer, String rootNetCDF, Set<String> fileNameConstraints, DerivativeStats.climatestat stat) {
-            this.shapeFileAttributeName = shapeFileAttributeName;
-            this.netcdfPrimer = netcdfPrimer;
-            this.rootNetCDF = rootNetCDF;
-            this.wrappers = wrappers;
-            this.fileNameConstraints = fileNameConstraints;
-            this.stat = stat;
+            // build the cache
+            String regionAttrValue = shapeWrapper.getPropertyMap().get(shapeFileAttributeName);
+            log.log(Level.INFO, " building cache for {0} ", regionAttrValue);
+            Geometry regionGeom = shapeWrapper.getGeom();
+            List<ArrayList<Integer>> indexes = buildCache(netcdfPrimer, regionGeom, stat);
+//                log.log(Level.FINE, " cache size is {0} for {1} of geom {2}", new Object[]{indexes.size(), regionAttrValue, regionGeom.toText()});
+            shapeCache.put(shapeWrapper.getPropertyMap().get(shapeFileAttributeName), indexes);
+            count++;
+            log.info(count + " out of " + wrappers.size() + " complete");
         }
 
-        public void run() {
-//            ShapeFileParserGeometryExtractor geomExtractor = new ShapeFileParserGeometryExtractor();
-//            List<String> props = new ArrayList<String>();
-//            props.add(shapeFileAttributeName);
-//            List<GeomShapeWrapper> wrappers = geomExtractor.readShapeFile(pathShapeFile, props, null);
-            log.log(Level.INFO, "have a list of {0} region geometries", wrappers.size());
-            // the cache is a string with a list of indexes
-            HashMap<String, List<ArrayList<Integer>>> shapeCache = new HashMap<String, List<ArrayList<Integer>>>();
-            int count = 0;
-            for (GeomShapeWrapper shapeWrapper : wrappers) {
+        // do the processing
+        // for each raster, iterate through all shapeCaches
+        File rootFile = new File(rootNetCDF);
 
-                // build the cache
-                String regionAttrValue = shapeWrapper.getPropertyMap().get(shapeFileAttributeName);
-
-                log.log(Level.INFO, " building cache for {0} ", regionAttrValue);
-
-                Geometry regionGeom = shapeWrapper.getGeom();
-                List<ArrayList<Integer>> indexes = buildCache(netcdfPrimer, regionGeom, stat);
-
-//                log.log(Level.FINE, " cache size is {0} for {1} of geom {2}", new Object[]{indexes.size(), regionAttrValue, regionGeom.toText()});
-
-                shapeCache.put(shapeWrapper.getPropertyMap().get(shapeFileAttributeName), indexes);
-                count++;
-                log.info(count + " out of " + wrappers.size() + " complete");
-            }
-
-            // do the processing
-            // for each raster, iterate through all shapeCaches
-            File rootFile = new File(rootNetCDF);
-
-            String[] subFiles = rootFile.list();
+        String[] subFiles = rootFile.list();
 
 
 
 
-            for (String subFile : subFiles) {
-                if (StringChooser.hasAllCharacteristics(subFile, fileNameConstraints)) {
-                    Set<String> municipioNames = shapeCache.keySet();
+        for (String subFile : subFiles) {
+            if (StringChooser.hasAllCharacteristics(subFile, fileNameConstraints, mustNotHaves)) {
+                Set<String> municipioNames = shapeCache.keySet();
 
-                    for (String municipioName : municipioNames) {
+                for (String municipioName : municipioNames) {
 
-                        HashMap<Integer, BasicAverager> averagers = getDataFromCachedIndexes(rootFile.getAbsolutePath() + "/" + subFile, shapeCache.get(municipioName), new MonthlyTemporalAggregationStrategy(), stat);
-                        Set<Integer> timekeys = averagers.keySet();
-                        try {
-                            String folderPath = "C:\\Users\\Johnny\\output_countries\\monthly\\" + stat.toString() + "\\";
-                            String outFile = folderPath + municipioName + "_" + subFile + ".csv";
-                            new File(folderPath).mkdirs();
-                            FileExportHelper.appendToFile(outFile, "time index, average, frequency");
-                            for (Integer i : timekeys) {
-                                FileExportHelper.appendToFile(outFile, i + "," + averagers.get(i).getAvg() + " , " + averagers.get(i).getCount());
-                            }
-
-                        } catch (Exception fnfe) {
-                            fnfe.printStackTrace();
+                    HashMap<Integer, BasicAverager> averagers = getDataFromCachedIndexes(rootFile.getAbsolutePath() + "/" + subFile, shapeCache.get(municipioName), new MonthlyTemporalAggregationStrategy(), stat);
+                    Set<Integer> timekeys = averagers.keySet();
+                    try {
+                        String folderPath = "C:\\Users\\Johnny\\output_countries\\monthly\\" + stat.toString() + "\\";
+                        String outFile = folderPath + municipioName + "_" + subFile + ".csv";
+                        new File(folderPath).mkdirs();
+                        FileExportHelper.appendToFile(outFile, "time index, average, frequency");
+                        for (Integer i : timekeys) {
+                            FileExportHelper.appendToFile(outFile, i + "," + averagers.get(i).getAvg() + " , " + averagers.get(i).getCount());
                         }
+
+                    } catch (Exception fnfe) {
+                        fnfe.printStackTrace();
                     }
                 }
+            }else{
+                System.out.println(subFile + " does not have acharaceterists for processingg");
             }
-
         }
+
     }
 
-    public static List<ArrayList<Integer>> buildCache(String fname, Geometry region, DerivativeStats.climatestat stat) {
+
+
+public static List<ArrayList<Integer>> buildCache(String fname, Geometry region, DerivativeStats.climatestat stat) {
 
 
         NetcdfFile dataFile = null;
@@ -429,7 +362,9 @@ public class ShapeFileNetCDFIntersector {
 
                                 averagers.get(averagersIndex).update(val);
 
-                            }
+                            
+
+}
                         }
                     }
                 }
@@ -438,7 +373,9 @@ public class ShapeFileNetCDFIntersector {
 
             // The file is closed no matter what by putting inside a try/catch block.
         } catch (InvalidRangeException ex) {
-            Logger.getLogger(ShapeFileNetCDFIntersector.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ShapeFileNetCDFIntersector.class  
+
+.getName()).log(Level.SEVERE, null, ex);
         } catch (java.io.IOException e) {
             e.printStackTrace();
             return null;
